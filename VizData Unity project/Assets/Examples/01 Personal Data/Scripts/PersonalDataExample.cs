@@ -1,13 +1,15 @@
 ﻿using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 public class PersonalDataExample : MonoBehaviour
 {
     public string dataCsvFileName = "";
+    public GameObject textObjectPrefab = null; 
 
     List<Person> _people = new List<Person>();
+    Dictionary<int, GameObject> _mainObjectLookup = new Dictionary<int, GameObject>();
 
     int _ageMin, _ageMax;
 
@@ -26,6 +28,9 @@ public class PersonalDataExample : MonoBehaviour
 
         //Represent
         Represent();
+
+        // Interact. 
+        AddInteraction();
 
     }
 
@@ -109,7 +114,9 @@ public class PersonalDataExample : MonoBehaviour
             }
 
             // Parse covid relation level.
+
             Person.CovidRelationLevel covidRelationLevel = Person.CovidRelationLevel.None;
+
             if (fieldContents.Length > 6)
             {
                 bool familyHadCovid, familyOrFriendsHadCovid, anyoneHadCovid;
@@ -157,23 +164,49 @@ public class PersonalDataExample : MonoBehaviour
 
     void Represent()
     {
+        _people.Sort((a, b) => a.age - b.age); 
+
         for(int p = 0; p <_people.Count; p++)
         {
             Person person = _people[p];
 
             float x = p;
-            float height = Mathf.InverseLerp(_ageMin, _ageMax, person.age) * 10;
+            float height = Mathf.InverseLerp(0, _ageMax, person.age) * 10;
             float y = height *0.5f;
-            float width = 0.5f;
+            float width = 0.95f;
 
             GameObject mainObject = new GameObject(person.id + " " + person.firstName);
             mainObject.transform.SetParent(transform);
-            mainObject.transform.localPosition = new Vector3(x,y,0);
+            mainObject.transform.localPosition = new Vector3(x,0,0);
 
             GameObject barObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
             barObject.transform.SetParent(mainObject.transform);
-            barObject.transform.localPosition = Vector3.zero;
+            barObject.transform.localPosition = new Vector3 (0,y,0);
             barObject.transform.localScale = new Vector3(width, height, width);
+
+            _mainObjectLookup.Add(person.id, mainObject); // opret dictionary 
+
+
+        }
+    }
+
+    void AddInteraction()
+    {
+        //tilføjer textobject til hver enkelt person
+        foreach(Person person in _people)
+        {
+            GameObject mainObject = _mainObjectLookup[ person.id ];
+           
+            GameObject textObject = Instantiate(textObjectPrefab); //tager originale textprefab, og laver en kopi
+            textObject.SetActive(true); 
+            textObject.transform.SetParent(mainObject.transform);
+            textObject.transform.localPosition = Vector3.zero;
+            textObject.transform.Rotate(new Vector3(0, 0, -45));
+            textObject.GetComponent<TextMesh>().text = person.firstName; 
+
+            Collider barCollider = mainObject.GetComponentInChildren<Collider>();
+            TextReveal textRevealer = barCollider.gameObject.AddComponent<TextReveal>(); //create a new script at add it to the colliders gameobject. 
+            textRevealer.textObject = textObject; 
 
         }
     }
