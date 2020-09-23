@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/Assignments/03 Procedual Icon/3.1 ProcedualIcon.unity
+- path: Assets/Examples/03 Procedural Meshes/3.4 HeightmapExtrusion.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
