@@ -7,7 +7,7 @@ public class ProcedualIcon : MonoBehaviour
 {
     public Material material = null;
     public int circleCount = 1;
-    const int circleResolution = 64;
+    public int circleResolution = 64;
     public float radius = 0.5f;
     public Color color = new Color(1, 0.5f, 1);
     
@@ -21,7 +21,8 @@ public class ProcedualIcon : MonoBehaviour
     public float activation = 0.0f;
 
     public float wavyCircleWavyness = 0f; 
-    public int wavyCircleWaveCount = 5; 
+
+    const int wavyCircleWaveCount = 5; 
 
 
     void OnRenderObject()
@@ -50,6 +51,8 @@ public class ProcedualIcon : MonoBehaviour
         Color actCol = Color.Lerp(verBotColor, verTopColor, activation);
 
         color = Color.Lerp(valCol,actCol,0.5f);
+
+        wavyCircleWavyness = Mathf.Lerp(0.5f, 0, valence);
 
     }
 
@@ -87,10 +90,12 @@ public class ProcedualIcon : MonoBehaviour
             float t = Mathf.InverseLerp(0, circleResolution - 1, i); //normalized value of i
             float circleangle = t * Mathf.PI * 2;
             float waveAngle = t * Mathf.PI * 2 * wavyCircleWaveCount;
-            float waveAmplitude = Mathf.Sin(waveAngle) * wavyCircleWavyness;
+            float waveAmplitude = Mathf.Sin(waveAngle * Random.Range(0f,1f)) * wavyCircleWavyness;
             float circleRadius = radius + waveAmplitude;
             float x = Mathf.Cos(circleangle) * circleRadius;
             float y = Mathf.Sin(circleangle) * circleRadius;
+
+
 
             GL.Vertex3(x, y, 0);
             GL.Vertex3(0, 0, 0);

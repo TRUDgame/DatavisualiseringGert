@@ -200,7 +200,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 944437311}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 4.74, y: 3.12, z: -1.14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -237,15 +237,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: 6f560db9f75328e4c88a4d46cf02d4bc, type: 2}
   circleCount: 1
+  circleResolution: 64
   radius: 0.5
   color: {r: 1, g: 0.5, b: 1, a: 1}
   randomSeed: 0
-  horLeftColor: {r: 0.54916793, g: 0.7830189, b: 0.18762901, a: 1}
-  horRightColor: {r: 0, g: 0.04074526, b: 1, a: 1}
-  verBotColor: {r: 0.039955575, g: 0.18867922, b: 0, a: 1}
-  verTopColor: {r: 0.09811318, g: 1, b: 1, a: 1}
+  horLeftColor: {r: 0.29803923, g: 0.54901963, b: 1, a: 1}
+  horRightColor: {r: 0.29622638, g: 0.5503177, b: 1, a: 1}
+  verBotColor: {r: 0.29803923, g: 0.54901963, b: 1, a: 1}
+  verTopColor: {r: 0.82782114, g: 1, b: 0, a: 1}
   valence: 0
   activation: 0
+  wavyCircleWavyness: 0
 --- !u!4 &1000341065
 Transform:
   m_ObjectHideFlags: 0
