@@ -17,7 +17,7 @@ public class MeshDeformationExample : MonoBehaviour
 
     void Awake()
     {
-        Vector3[] _originalVertices = originalMesh.vertices;
+       _originalVertices = originalMesh.vertices;
         int[] triangleindices = originalMesh.triangles;
 
         _mesh = new Mesh(); 
