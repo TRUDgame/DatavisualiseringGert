@@ -1,4 +1,4 @@
-﻿Shader "Custom/19SimplexNoise"
+﻿Shader "Custom/20"
 {
 
 	Properties{
@@ -22,8 +22,10 @@
 			
 			struct ToVert
 			{
+
 				float4 vertex : POSITION;
 				float2 uv : TEXCOORD0; //Receive UV set 0. 
+				float3 normal : NORMAL; 
 			};
 
 			struct ToFrag
@@ -37,6 +39,8 @@
 
 			ToFrag Vert(ToVert v)
 			{
+				v.vertex.xyz += v.normal * 0.2 * SimplexNoise(half4(v.vertex.xyz *_NoiseFrequency, _Time.y));
+
 				ToFrag o;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = v.uv; //Copy uv to output that will be forwarded to Frag function. 
