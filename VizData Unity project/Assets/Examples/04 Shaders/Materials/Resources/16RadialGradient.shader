@@ -25,8 +25,7 @@
 				float2 uv : TEXCOORD0;
 			};
 
-			int _TileCount; 
-
+			
 			ToFrag Vert(ToVert v)
 			{
 				ToFrag o;

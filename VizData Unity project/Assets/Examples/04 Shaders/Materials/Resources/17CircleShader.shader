@@ -24,8 +24,7 @@
 				float4 vertex : SV_POSITION;
 				float2 uv : TEXCOORD0;
 			};
-
-			int _TileCount; 
+ 
 
 			ToFrag Vert(ToVert v)
 			{
@@ -37,11 +36,14 @@
 
 			half4 Frag(ToFrag i) : SV_Target
 			{
-				//float pos = (i.uv * 2) - 1; 
-				half brightness = length(i.uv * 2); 
-			// half brightness = distance(half2(0, 0), pos); 
 
-				return half4(brightness, brightness, brightness, 1);
+				half2 pos = (i.uv * 2) - 1; 
+				half d = length(pos); 
+				//if (d > 1) discard; //Alternative. Don't draw pixel if distance is above 1.0
+
+				float result = floor(1 - d + 1); 
+
+				return half4(result.xxx, 1);
 
 
 			}
