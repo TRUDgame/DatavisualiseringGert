@@ -244,11 +244,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb57fce04e6cd2a4ea4c6d9d177f4019, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _objectCount: 100
-  _sceneRadius: 5
+  _humanCount: 100
+  _sceneRadius: 10
   _contactDistace: 1
-  _speed: 1.09
-  _lineThickness: 0.14
+  _speed: 1.35
+  _lineThickness: 0.1
+  _circleThickness: 0.44
+  _notInfectedColor: {r: 0.31107154, g: 0.6415094, b: 0.36363587, a: 0.9882353}
+  _infectedColor: {r: 0.9433962, g: 0.5332589, b: 0.19935915, a: 1}
   _displayCircles: 1
   _displayLines: 1
   _logLineCount: 0
@@ -302,7 +305,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.4683419, g: 0.34191883, b: 0.5377358, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
