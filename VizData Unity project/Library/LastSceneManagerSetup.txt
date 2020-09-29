@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/Assignments/Meshes/ProcedualMesh.unity
+- path: Assets/Examples/04 Shaders/4.1.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0

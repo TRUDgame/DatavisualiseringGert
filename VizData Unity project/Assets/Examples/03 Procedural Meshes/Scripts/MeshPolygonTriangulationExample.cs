@@ -12,13 +12,13 @@ public class MeshPolygonTriangulationExample : MonoBehaviour
 	public Transform[] outlinePointTransforms = null;
 
 	Mesh _mesh;
-	Polygon _polygon;
+	PolygonOld _polygon;
 
 
 	void Awake()
 	{
 		_mesh = new Mesh();
-		_polygon = new Polygon();
+		_polygon = new PolygonOld();
 	}
 
 

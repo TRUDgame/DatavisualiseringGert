@@ -8,7 +8,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Polygon
+public class PolygonOld
 {
 	double[] _data;
 	Vector3[] _vertices;

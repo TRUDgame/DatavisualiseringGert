@@ -37,7 +37,11 @@
 			half4 Frag(ToFrag i) : SV_Target
 			{
 				//float pos = (i.uv * 2) - 1; 
-				half brightness = length(i.uv * 2); 
+				half brightness = length(i.uv * 2 - 1) ; 
+			if (brightness > 1) {
+				discard; 
+			}
+
 			// half brightness = distance(half2(0, 0), pos); 
 
 				return half4(brightness, brightness, brightness, 1);
