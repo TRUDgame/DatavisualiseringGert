@@ -23,6 +23,7 @@ Shader "Hidden/Draw/Rect"
 
 			#pragma multi_compile_fog 				// Support fog.
 			#pragma multi_compile_instancing		// Support instancing
+			#pragma multi_compile_local __ _ANTIALIAS
 
 			#include "UnityCG.cginc"
 			#include "SDFShapeBase.cginc"
@@ -30,11 +31,12 @@ Shader "Hidden/Draw/Rect"
 			UNITY_INSTANCING_BUFFER_START( Props )
 				UNITY_DEFINE_INSTANCED_PROP( fixed4, _FillColor )
 				UNITY_DEFINE_INSTANCED_PROP( fixed4, _StrokeColor )
-				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeMin )
+				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeOffsetMin )
 				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeThickness )
 				UNITY_DEFINE_INSTANCED_PROP( half2, _FillExtents )
 				UNITY_DEFINE_INSTANCED_PROP( half4, _Roundedness )
 			UNITY_INSTANCING_BUFFER_END( Props )
+
 
 			// From IQ: https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
 			half SDRoundedBox( half2 p, half2 b, half4 r ){
@@ -45,39 +47,46 @@ Shader "Hidden/Draw/Rect"
 			}
 
 
+			ToFrag Vert( ToVert v )
+			{
+				ToFrag o;
+
+				UNITY_SETUP_INSTANCE_ID( v );			// Support instancing
+				UNITY_TRANSFER_INSTANCE_ID( v, o );		// Support instanced properties in fragment Shader.
+
+				o.pos = v.vertex.xy * GetModelScale2D(); // Grab vertex and scale before expanding for antialiasing.
+
+				#ifdef _ANTIALIAS
+					// When applying edge antialiasing, we need to expand the quad to compensate for shrinking. Otherwise shapes won't align.
+					// This is perhaps more important for rects than other shapes.
+					// https://forum.unity.com/threads/need-help-fixed-size-billboard.688054/#post-4604032
+					float4 pivotViewPos = mul( UNITY_MATRIX_V, float4( unity_ObjectToWorld._m03_m13_m23, 1.0 ) );
+					v.vertex *= 1 - pivotViewPos.z * ANTIALIAS_SIZE * 1.2 / _ScreenParams.y;
+				#endif
+
+				o.vertex = UnityObjectToClipPos( v.vertex );
+				UNITY_TRANSFER_FOG( o, o.vertex ); // Support fog.
+
+				return o;
+			}
+			
+			
 			fixed4 Frag( ToFrag i ) : SV_Target
 			{
 				UNITY_SETUP_INSTANCE_ID( i ); // Support instanced properties in fragment Shader.
 
 				half2 fillExtents = UNITY_ACCESS_INSTANCED_PROP( Props, _FillExtents );
 				half strokeThickness = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeThickness );
-				half strokeMin = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeMin );
+				half strokeOffsetMin = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeOffsetMin );
 				half4 roundedness = UNITY_ACCESS_INSTANCED_PROP( Props, _Roundedness );
 
-				float d = SDRoundedBox( i.pos, fillExtents, roundedness );
-				half dEdge = strokeMin + strokeThickness;
-				if( d > dEdge ) discard;
+				half d = SDRoundedBox( i.pos, fillExtents, roundedness ) - strokeOffsetMin;
+				if( d > strokeThickness ) discard;
 
-				// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
-				// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
-				// on modern graphics cards - so it should be cheap.
-				// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
-				half dDelta = fwidth( d );
-
-				// Get instanced properties.
 				fixed4 fillCol = UNITY_ACCESS_INSTANCED_PROP( Props, _FillColor );
 				fixed4 strokeCol = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
 
-				// Interpolate fill and line colors.
-				half innerT = smoothstep( strokeMin, strokeMin - dDelta, d );
-				fixed4 col = lerp( strokeCol, fillCol, innerT );
-
-				// Apply smooth edge.
-				half edgeAlpha = smoothstep( dEdge, dEdge - dDelta * ANTIALIAS_SIZE, d );
-				col.a *= edgeAlpha;
-
-				UNITY_APPLY_FOG( i.fogCoord, col ); // Support fog.
-				return col;
+				return EvaluateFillStrokeColor( d, strokeThickness, fillCol, strokeCol );
 			}
 
 			ENDCG

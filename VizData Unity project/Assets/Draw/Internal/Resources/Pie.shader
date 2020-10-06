@@ -15,11 +15,12 @@ Shader "Hidden/Draw/Pie"
 		{
 			CGPROGRAM
 
-			#pragma vertex PieVert
+			#pragma vertex Vert
 			#pragma fragment Frag
 
 			#pragma multi_compile_fog 				// Support fog.
 			#pragma multi_compile_instancing		// Support instancing
+			#pragma multi_compile_local __ _ANTIALIAS
 
 			#include "UnityCG.cginc"
 			#include "SDFShapeBase.cginc"
@@ -32,19 +33,28 @@ Shader "Hidden/Draw/Pie"
 				UNITY_FOG_COORDS( 2 ) 					// Support fog.
 					UNITY_VERTEX_INPUT_INSTANCE_ID 			// Support instanced properties in fragment Shader.
 			};
-
-
+			
+			
 			UNITY_INSTANCING_BUFFER_START( Props )
 				UNITY_DEFINE_INSTANCED_PROP( fixed4, _FillColor )
 				UNITY_DEFINE_INSTANCED_PROP( fixed4, _StrokeColor )
-				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeMin )
+				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeOffsetMin )
 				UNITY_DEFINE_INSTANCED_PROP( half, _StrokeThickness )
 				UNITY_DEFINE_INSTANCED_PROP( half, _FillExtents )
 				UNITY_DEFINE_INSTANCED_PROP( half, _AngleExtents )
 			UNITY_INSTANCING_BUFFER_END( Props )
+			
+			// From IQ: https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
+			half SdPie( half2 p, half2 c, half r )
+			{
+				p.x = abs( p.x );
+				float l = length( p ) - r;
+				float m = length( p - c * clamp( dot( p, c ), 0.0, r ) ); // c = sin/cos of the aperture
+				return max( l, m * sign( c.y * p.x - c.x * p.y ) );
+			}
 
 
-			PieToFrag PieVert( ToVert v )
+			PieToFrag Vert( ToVert v )
 			{
 				PieToFrag o;
 
@@ -64,50 +74,22 @@ Shader "Hidden/Draw/Pie"
 				return o;
 			}
 
-			// From IQ: https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
-			half SdPie( half2 p, half2 c, half r )
-			{
-				p.x = abs( p.x );
-				float l = length( p ) - r;
-				float m = length( p - c * clamp( dot( p, c ), 0.0, r ) ); // c = sin/cos of the aperture
-				return max( l, m * sign( c.y * p.x - c.x * p.y ) );
-			}
-
 
 			fixed4 Frag( PieToFrag i ) : SV_Target
 			{
 				UNITY_SETUP_INSTANCE_ID( i ); // Support instanced properties in fragment Shader.
 				
 				half fillExtents = UNITY_ACCESS_INSTANCED_PROP( Props, _FillExtents );
-				half strokeMin = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeMin );
+				half strokeOffsetMin = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeOffsetMin );
 				half strokeThickness = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeThickness );
 				
-				half d = SdPie( i.pos, i.c, fillExtents );
-				half dEdge = strokeMin + strokeThickness;
-				if( d > dEdge ) discard;
+				half d = SdPie( i.pos, i.c, fillExtents ) - strokeOffsetMin;
+				if( d > strokeThickness ) discard;
 
-				// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
-				// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
-				// on modern graphics cards - so it should be cheap.
-				// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
-				half dDelta = fwidth( d );
-
-				// Get instanced properties.
 				fixed4 fillCol = UNITY_ACCESS_INSTANCED_PROP( Props, _FillColor );
 				fixed4 strokeCol = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
 
-				// Interpolate fill and line colors.
-				half innerT = smoothstep( strokeMin, strokeMin - dDelta, d );
-				fixed4 col = lerp( strokeCol, fillCol, innerT );
-
-				// Apply smooth edge.
-				half edgeAlpha = smoothstep( dEdge, dEdge - dDelta * ANTIALIAS_SIZE, d );
-				col.a *= edgeAlpha;
-
-				// Support fog.
-				UNITY_APPLY_FOG( i.fogCoord, col );
-
-				return col;
+				return EvaluateFillStrokeColor( d, strokeThickness, fillCol, strokeCol );
 			}
 
 			ENDCG

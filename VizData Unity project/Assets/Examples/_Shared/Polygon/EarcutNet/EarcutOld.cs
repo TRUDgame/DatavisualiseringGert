@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace EarcutNet
 {
-	public class Earcut
+	public class EarcutOld
 	{
 		public static List<int> Tessellate(IList<double> data, IList<int> holeIndices)
 		{

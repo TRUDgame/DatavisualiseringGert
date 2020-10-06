@@ -186,8 +186,10 @@ MonoBehaviour:
   controlALocator: {fileID: 1973495558}
   controlBLocator: {fileID: 1406229127}
   anchorBLocator: {fileID: 1116265714}
-  resolution: 33
-  strokeThickness: 0.26
+  resolution: 34
+  strokeThickness: 0.24
+  beginCap: 0
+  endCap: 0
 --- !u!4 &612107634
 Transform:
   m_ObjectHideFlags: 0
@@ -256,7 +258,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1406229126}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalPosition: {x: -0.14, y: -0.71, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

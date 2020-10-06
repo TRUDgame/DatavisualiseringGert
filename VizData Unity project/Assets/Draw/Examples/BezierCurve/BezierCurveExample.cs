@@ -6,49 +6,55 @@
 using UnityEngine;
 using static Draw;
 
-[ExecuteInEditMode]
-public class BezierCurveExample : MonoBehaviour
+namespace DrawExamples
 {
-	public Transform anchorALocator;
-	public Transform controlALocator;
-	public Transform controlBLocator;
-	public Transform anchorBLocator;
-	public int resolution = 32;
-	public float strokeThickness = 0.2f;
-
-	Polyline _polyline = new Polyline();
-
-
-	void Update()
+	[ExecuteInEditMode]
+	public class BezierCurveExample : MonoBehaviour
 	{
-		if( !anchorALocator || !controlALocator || !controlBLocator || !anchorBLocator ) return;
+		public Transform anchorALocator;
+		public Transform controlALocator;
+		public Transform controlBLocator;
+		public Transform anchorBLocator;
+		[Range(3,64)] public int resolution = 32;
+		[Range(0.01f,1f)] public float strokeThickness = 0.2f;
+		public Cap beginCap = Cap.Round;
+		public Cap endCap = Cap.Round;
 
-		SetStrokeThickness( strokeThickness );
-		SetStrokeColor( Color.white, 0.8f );
-		_polyline.SetBezierCurve( anchorALocator.position, controlALocator.position, controlBLocator.position, anchorBLocator.position, resolution );
-		DrawPolyline( _polyline, 0, 0 );
-
-		DrawGuides();
-	}
+		Polyline _polyline = new Polyline();
 
 
-	void DrawGuides()
-	{
-		PushCanvas();
-		TranslateCanvas( 0, 0, 0.01f ); // Draw behind the bezier line.
+		void Update()
+		{
+			if( !anchorALocator || !controlALocator || !controlBLocator || !anchorBLocator ) return;
 
-		SetStrokeThickness( 0.02f );
-		SetStrokeColor( Color.red );
-		DrawLine( anchorALocator.position, controlALocator.position );
-		DrawLine( anchorBLocator.position, controlBLocator.position );
+			SetStrokeThickness( strokeThickness );
+			SetStrokeColor( Color.white, 0.8f );
+			_polyline.SetBezierCurve( anchorALocator.position, controlALocator.position, controlBLocator.position, anchorBLocator.position, resolution );
+			DrawPolyline( _polyline, 0, 0, beginCap, endCap );
 
-		SetFillColor( Color.red );
-		SetNoStroke();
-		DrawCircle( anchorALocator.position, 0.05f );
-		DrawCircle( controlALocator.position, 0.05f );
-		DrawCircle( controlBLocator.position, 0.05f );
-		DrawCircle( anchorBLocator.position, 0.05f );
+			DrawGuides();
+		}
 
-		PopCanvas();
+
+		void DrawGuides()
+		{
+			PushCanvas();
+			TranslateCanvas( 0, 0, 0.01f ); // Draw behind the bezier line.
+
+			SetStrokeThickness( 0.02f );
+
+			SetStrokeColor( Color.red );
+			DrawLine( anchorALocator.position, controlALocator.position );
+			DrawLine( anchorBLocator.position, controlBLocator.position );
+
+			SetFillColor( Color.red );
+			SetNoStroke();
+			DrawCircle( anchorALocator.position, 0.05f );
+			DrawCircle( controlALocator.position, 0.05f );
+			DrawCircle( controlBLocator.position, 0.05f );
+			DrawCircle( anchorBLocator.position, 0.05f );
+
+			PopCanvas();
+		}
 	}
 }

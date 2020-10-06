@@ -66,7 +66,7 @@ public class PolygonOld
 
 	void Triangulate()
 	{
-		_indices = EarcutNet.Earcut.Tessellate( _data, new int[] { } );
+		_indices = EarcutNet.EarcutOld.Tessellate( _data, new int[] { } );
 		_indices.Reverse(); // TODO avoid garbage. Earcut always returns a flipped mesh.
 		_isDirty = false;
 	}

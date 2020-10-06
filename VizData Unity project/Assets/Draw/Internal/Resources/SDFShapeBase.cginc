@@ -3,7 +3,8 @@
 	http://cec.dk
 */
 
-#define ANTIALIAS_SIZE 1.5
+#define ANTIALIAS_SIZE 1.2
+
 
 struct ToVert
 {
@@ -21,39 +22,54 @@ struct ToFrag
 };
 
 
+fixed4 EvaluateFillStrokeColor( half d, half strokeThickness, fixed4 fillCol, fixed4 strokeCol )
+{
+	#ifdef _ANTIALIAS
+		// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
+		// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
+		// on modern graphics cards - so it should be cheap.
+		// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
+		half dDelta = fwidth( d ) * ANTIALIAS_SIZE;
+
+		// Interpolate fill and line colors.
+		half innerT = smoothstep( 0, -dDelta, d );
+		fixed4 col = lerp( strokeCol, fillCol, innerT );
+
+		// Apply smooth edge.
+		col.a *= smoothstep( strokeThickness, strokeThickness - dDelta, d );
+	#else
+		fixed4 col = lerp( fillCol, strokeCol, ceil( d ) );
+	#endif
+
+	UNITY_APPLY_FOG( i.fogCoord, col ); // Support fog.
+
+	return col;
+}
+
+
+fixed4 EvaluateStrokeColor( half d, fixed4 strokeCol )
+{
+	#ifdef _ANTIALIAS
+		// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
+		// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
+		// on modern graphics cards - so it should be cheap.
+		// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
+		half dDelta = fwidth( d ) * ANTIALIAS_SIZE;
+
+		// Apply smooth edge.
+		strokeCol.a *= smoothstep( 0.0, -dDelta, d );
+	#endif
+
+	UNITY_APPLY_FOG( i.fogCoord, strokeCol ); // Support fog.
+
+	return strokeCol;
+}
+
+
 float2 GetModelScale2D()
 {
-	return float2( length( unity_ObjectToWorld._m00_m10_m20 ), length( unity_ObjectToWorld._m01_m11_m21 ) );
-}
-
-
-ToFrag Vert( ToVert v )
-{
-	ToFrag o;
-
-	UNITY_SETUP_INSTANCE_ID( v );			// Support instancing
-	UNITY_TRANSFER_INSTANCE_ID( v, o );		// Support instanced properties in fragment Shader.
-
-	o.vertex = UnityObjectToClipPos( v.vertex );
-	o.pos = GetModelScale2D() * v.vertex.xy;
-
-	UNITY_TRANSFER_FOG( o, o.vertex ); 		// Support fog.
-
-	return o;
-}
-
-
-ToFrag VertNoScale( ToVert v )
-{
-	ToFrag o;
-
-	UNITY_SETUP_INSTANCE_ID( v );			// Support instancing
-	UNITY_TRANSFER_INSTANCE_ID( v, o );		// Support instanced properties in fragment Shader.
-
-	o.vertex = UnityObjectToClipPos( v.vertex );
-	o.pos = v.vertex.xy;
-
-	UNITY_TRANSFER_FOG( o, o.vertex ); 		// Support fog.
-
-	return o;
+	return float2(
+		length( unity_ObjectToWorld._m00_m10_m20 ),
+		length( unity_ObjectToWorld._m01_m11_m21 )
+	);
 }

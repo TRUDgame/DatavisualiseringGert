@@ -39,4 +39,30 @@ public static class DrawMath
 		float t1 = 1f - t;
 		return a * t1 * t1 * t1 + 3 * b * t * t1 * t1 + 3 * c * t * t * t1 + d * t * t * t;
 	}
+
+
+	/// <summary>
+	/// Takes a series of points and fills an array with normalized directions ponting from one to the next.
+	/// </summary>
+	public static void ComputeNormalizedDirections( Vector2[] points, ref Vector2[] directions, bool wrap = false )
+	{
+		if( directions == null || directions.Length != points.Length ) directions = new Vector2[ points.Length ];
+
+		Vector2 prev = points[ 0 ];
+		if( wrap ) {
+			Vector2 dir = prev - points[ points.Length - 1 ];
+			dir.Normalize();
+			directions[ points.Length - 1 ] = dir;
+		}
+		for( int p = 1; p < points.Length; p++ ) {
+			Vector2 point = points[ p ];
+			Vector2 dir = point - prev;
+			dir.Normalize();
+			directions[ p - 1 ] = dir;
+			prev = point;
+		}
+		if( !wrap ) {
+			directions[ points.Length - 1 ] = directions[ points.Length - 2 ];
+		}
+	}
 }

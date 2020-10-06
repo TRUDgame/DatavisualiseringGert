@@ -15,27 +15,32 @@ Shader "Hidden/Draw/Polyline"
 		{
 			CGPROGRAM
 
-			#pragma vertex VertPolyline
-			#pragma fragment FragPolyline
+			#pragma vertex Vert
+			#pragma fragment Frag
 
 			#pragma multi_compile_fog 				// Support fog.
 			#pragma multi_compile_instancing		// Support instancing
+			#pragma multi_compile_local __ _ANTIALIAS
 
 			#include "UnityCG.cginc"
 			#include "SDFShapeBase.cginc"
 
 			// From IQ: https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
-			float sdSegment( float2 p, float2 a, float2 b )
+			float sdSegment( float2 p, float2 a, float2 b, float2 r )
 			{
 				float2 pa = p - a, ba = b - a;
-				float h = clamp( dot( pa, ba ) / dot( ba, ba ), 0.0, 1.0 );
-				return length( pa - ba * h );
+				float sqLength = dot( ba, ba );
+				float h = dot( pa, ba ) / sqLength; // Compute normalized position along the segment. Dot( ba, ba ) is square length.
+				if( h <= 0 && r.x < 1 ) return max( length( pa - ba * h ), -h * sqrt( sqLength ) );
+				if( h >= 1 && r.y < 1 ) return max( length( pa - ba * h ), -(1-h) * sqrt( sqLength ) );
+				return length( pa - ba * saturate( h ) );
 			}
 
 			struct ToVertPolyline
 			{
 				float4 vertex : POSITION;
 				float4 points : TEXCOORD0;
+				float2 roundingFlags : TEXCOORD1; // (1,1) means rounded begin and end caps.
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -44,7 +49,8 @@ Shader "Hidden/Draw/Polyline"
 				float4 vertex : SV_POSITION;
 				float2 pos : TEXCOORD0;
 				nointerpolation float4 points : TEXCOORD1;
-				UNITY_FOG_COORDS( 1 ) 					// Support fog.
+				nointerpolation float2 roundingFlags : TEXCOORD2;
+				UNITY_FOG_COORDS( 3 ) 					// Support fog.
 				UNITY_VERTEX_INPUT_INSTANCE_ID 			// Support instanced properties in fragment Shader.
 			};
 
@@ -54,7 +60,7 @@ Shader "Hidden/Draw/Polyline"
 			UNITY_INSTANCING_BUFFER_END( Props )
 			
 
-			ToFragPolyline VertPolyline( ToVertPolyline v )
+			ToFragPolyline Vert( ToVertPolyline v )
 			{
 				ToFragPolyline o;
 
@@ -64,6 +70,7 @@ Shader "Hidden/Draw/Polyline"
 				o.vertex = UnityObjectToClipPos( v.vertex );
 				o.pos = v.vertex.xy;
 				o.points = v.points;
+				o.roundingFlags = v.roundingFlags;
 
 				UNITY_TRANSFER_FOG( o, o.vertex ); 		// Support fog.
 				 
@@ -71,26 +78,18 @@ Shader "Hidden/Draw/Polyline"
 			}
 			
 
-			fixed4 FragPolyline( ToFragPolyline i ) : SV_Target
+			fixed4 Frag( ToFragPolyline i ) : SV_Target
 			{
 				UNITY_SETUP_INSTANCE_ID( i ); // Support instanced properties in fragment Shader.
 				
 				half halfStrokeThickness = UNITY_ACCESS_INSTANCED_PROP( Props, _HalfStrokeThickness );
 
-				float d = sdSegment( i.pos, i.points.xy, i.points.zw );
-				if( d > halfStrokeThickness ) discard;
+				float d = sdSegment( i.pos, i.points.xy, i.points.zw, i.roundingFlags ) - halfStrokeThickness;
+				if( d > 0 ) discard;
 
-				fixed4 col = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
+				fixed4 strokeCol = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
 
-				// Apply smooth edge.
-				half dDelta = fwidth( d );
-				half edgeAlpha = smoothstep( halfStrokeThickness, halfStrokeThickness - dDelta * ANTIALIAS_SIZE, d );
-				col.a *= edgeAlpha;
-
-				// Support fog.
-				UNITY_APPLY_FOG( i.fogCoord, col );
-
-				return col;
+				return EvaluateStrokeColor( d, strokeCol );
 			}
 			ENDCG
 		}

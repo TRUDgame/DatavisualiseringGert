@@ -20,6 +20,7 @@ Shader "Hidden/Draw/Circle"
 
 			#pragma multi_compile_fog 				// Support fog.
 			#pragma multi_compile_instancing		// Support instancing
+			#pragma multi_compile_local __ _ANTIALIAS
 
 			#include "UnityCG.cginc"
 			#include "SDFShapeBase.cginc"
@@ -33,35 +34,37 @@ Shader "Hidden/Draw/Circle"
 			
 			fixed4 Frag( ToFrag i ) : SV_Target
 			{
+				// Compute SDF.
 				half d = length( i.pos );
 				if( d > 1 ) discard;
 
 				UNITY_SETUP_INSTANCE_ID( i ); // Support instanced properties in fragment Shader.
 
-				// Circle sdf.
+				// Grow circle to inner radius.
 				half innerRadiusRel = UNITY_ACCESS_INSTANCED_PROP( Props, _InnerRadiusRel );
 				d -= innerRadiusRel;
-
-				// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
-				// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
-				// on modern graphics cards - so it should be cheap.
-				// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
-				half dDelta = fwidth( d );
-
-				// Interpolate from edge to edge minus delta of a fragment.
-				half edgePos = 1 - innerRadiusRel;
 
 				// Get instanced properties.
 				fixed4 fillCol = UNITY_ACCESS_INSTANCED_PROP( Props, _FillColor );
 				fixed4 strokeCol = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
 
-				// Interpolate fill and line colors.
-				half innerT = smoothstep( 0.0, 0.0 - dDelta, d );
-				fixed4 col = lerp( strokeCol, fillCol, innerT );
+				#ifdef _ANTIALIAS
+					// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
+					// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
+					// on modern graphics cards - so it should be cheap.
+					// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
+					half dDelta = fwidth( d );
 
-				// Apply smooth edge.
-				half edgeAlpha = smoothstep( edgePos, edgePos - dDelta * ANTIALIAS_SIZE, d );
-				col.a *= edgeAlpha;
+					// Interpolate fill and line colors.
+					half innerT = smoothstep( 0.0, -dDelta, d );
+					fixed4 col = lerp( strokeCol, fillCol, innerT );
+
+					// Apply smooth edge.
+					half edgePos = 1 - innerRadiusRel;
+					col.a *= smoothstep( edgePos, edgePos - dDelta * ANTIALIAS_SIZE, d );
+				#else
+					fixed4 col = lerp( fillCol, strokeCol, ceil( d ) );
+				#endif
 
 				// Support fog.
 				UNITY_APPLY_FOG( i.fogCoord, col );

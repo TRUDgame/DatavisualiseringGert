@@ -15,11 +15,12 @@ Shader "Hidden/Draw/Line"
 		{
 			CGPROGRAM
 
-			#pragma vertex VertLine
-			#pragma fragment FragLine
+			#pragma vertex Vert
+			#pragma fragment Frag
 
 			#pragma multi_compile_fog 				// Support fog.
 			#pragma multi_compile_instancing		// Support instancing
+			#pragma multi_compile_local __ _ANTIALIAS
 
 			#include "UnityCG.cginc"
 			#include "SDFShapeBase.cginc"
@@ -30,7 +31,7 @@ Shader "Hidden/Draw/Line"
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
-
+		
 			struct ToFragLine
 			{
 				float4 vertex : SV_POSITION;
@@ -47,7 +48,7 @@ Shader "Hidden/Draw/Line"
 			UNITY_INSTANCING_BUFFER_END( Props )
 
 
-			ToFragLine VertLine( ToVertLine v )
+			ToFragLine Vert( ToVertLine v )
 			{
 				ToFragLine o;
 
@@ -63,35 +64,23 @@ Shader "Hidden/Draw/Line"
 			}
 
 
-			fixed4 FragLine( ToFragLine i ) : SV_Target
+			fixed4 Frag( ToFragLine i ) : SV_Target
 			{
 				UNITY_SETUP_INSTANCE_ID( i ); // Support instanced properties in fragment Shader.
-
+				
 				half2 extents = UNITY_ACCESS_INSTANCED_PROP( Props, _FillExtents );
 				half2 roundCapFlags = UNITY_ACCESS_INSTANCED_PROP( Props, _RoundedCapFlags );
 
-				// Similar to a rounded rect SDF. https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+				// Compute SDF. Similar to sdRoundedBox. https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
 				half2 p = i.pos * extents;
 				half r = ( ( p.x < 0.0 ) ? roundCapFlags.x : roundCapFlags.y ) * extents.y;
 				half2 q = abs( p ) - extents + r;
 				half d = min( max( q.x, q.y ), 0.0 ) + length( max( q, 0.0 ) ) - r;
 				if( d > 0 ) discard;
+				
+				fixed4 strokeCol = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
 
-				// Compute the absolute difference between 'd' at this fragment and 'd' at the neighboring fragments.
-				// The actual values of 'd' are picked up from neightbor threads, which are executing in same group
-				// on modern graphics cards - so it should be cheap.
-				// https://computergraphics.stackexchange.com/questions/61/what-is-fwidth-and-how-does-it-work/64
-				half dDelta = fwidth( d );
-
-				// Get instanced properties.
-				fixed4 col = UNITY_ACCESS_INSTANCED_PROP( Props, _StrokeColor );
-
-				// Apply smooth edge.
-				half edgeAlpha = smoothstep( 0.0, 0.0 - dDelta * ANTIALIAS_SIZE, d );
-				col.a *= edgeAlpha;
-
-				UNITY_APPLY_FOG( i.fogCoord, col ); // Support fog.
-				return col;
+				return EvaluateStrokeColor( d, strokeCol );
 			}
 
 			ENDCG

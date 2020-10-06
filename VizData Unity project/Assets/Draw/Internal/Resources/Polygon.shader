@@ -28,6 +28,24 @@ Shader "Hidden/Draw/Polygon"
 				UNITY_DEFINE_INSTANCED_PROP( fixed4, _FillColor )
 			UNITY_INSTANCING_BUFFER_END( Props )
 			
+
+			ToFrag Vert( ToVert v )
+			{
+				ToFrag o;
+
+				UNITY_SETUP_INSTANCE_ID( v );			// Support instancing
+				UNITY_TRANSFER_INSTANCE_ID( v, o );		// Support instanced properties in fragment Shader.
+
+				float2 scale = GetModelScale2D();
+				o.pos = v.vertex.xy * scale;
+
+				o.vertex = UnityObjectToClipPos( v.vertex );
+
+				UNITY_TRANSFER_FOG( o, o.vertex ); 		// Support fog.
+
+				return o;
+			}
+
 			
 			fixed4 Frag( ToFrag i ) : SV_Target
 			{
